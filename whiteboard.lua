@@ -25,7 +25,10 @@ function M.create_whiteboard()
     whiteboard.previous_color_index = 1
     whiteboard.color_index = 1
     --Color format is 0xABGR
-    whiteboard.color_array = {0xff4d4de8, 0xff4d9de8, 0xff4de5e8, 0xff4de88e, 0xff95e84d, 0xffe8d34d, 0xffe8574d, 0xffe84d9d, 0xffbc4de8}
+	-- OLD INDEX: RED, ORANGE, YELLOW, GREEN, TEAL, BLUE, INDIGO, PURPLE, MAGENTA
+    -- whiteboard.color_array = {0xff4d4de8, 0xff4d9de8, 0xff4de5e8, 0xff4de88e, 0xff95e84d, 0xffe8d34d, 0xffe8574d, 0xffe84d9d, 0xffbc4de8}
+	-- NEW INDEX: RED, ORANGE, YELLOW, GREEN (AVOCADO), BLUE, PURPLE, WHITE, GRAY, BLACK
+    whiteboard.color_array = {0xff3a12ea, 0xff236cf5, 0xff0dc6ff, 0xff12b362, 0xfffc6541, 0xff80035e, 0xffffffff, 0xff808080, 0xff000000}
     whiteboard.draw_size = 6
     whiteboard.eraser_size = 26
     whiteboard.size_max = 12  -- size_max must be a minimum of 2.
@@ -232,6 +235,8 @@ function M.create_whiteboard()
     end
 
     whiteboard.update = function (source, graphics)
+		local shift_down = winapi.GetAsyncKeyState(0x10)
+		
         local mouse_down = winapi.GetAsyncKeyState(winapi.VK_LBUTTON)
         local window = winapi.GetForegroundWindow()
         if mouse_down then
@@ -260,12 +265,21 @@ function M.create_whiteboard()
                 end
                 
                 if whiteboard.color_index ~= 0 or #(whiteboard.lines) > 0 then
+					if (not whiteboard.drawing and shift_down and #whiteboard.lines > 0) then
+						-- Extend previous point
+						whiteboard.drawing = true
+                        local current_line = whiteboard.lines[#(whiteboard.lines)]
+						local lastpoint = current_line.points[ #(current_line.points) ]
+						
+						whiteboard.prev_mouse_pos = {x = lastpoint.x, y = lastpoint.y}
+					end
+					
                     if whiteboard.drawing then
                         local effect = obs.obs_get_base_effect(obs.OBS_EFFECT_DEFAULT)
                         if not effect then
                             return
                         end
-
+						
                         local new_segment = {
                             color = whiteboard.color_index,
                             size = size,
